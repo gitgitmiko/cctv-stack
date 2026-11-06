@@ -1,0 +1,158 @@
+# Frigate - gitgit-server
+# Secrets come from ../.env ({FRIGATE_*} variables).
+
+mqtt:
+  enabled: true
+  host: mosquitto
+  port: 1883
+  user: '{FRIGATE_MQTT_USER}'
+  password: '{FRIGATE_MQTT_PASSWORD}'
+
+# Login hardening (UI is exposed through Cloudflare Tunnel)
+auth:
+  enabled: true
+  cookie_secure: true
+  session_length: 604800  # 7 days
+  failed_login_rate_limit: 1/second;5/minute;20/hour
+  # Docker network of this stack: lets Frigate read the real client IP from
+  # X-Forwarded-For so the rate limit applies per visitor, not globally.
+  trusted_proxies:
+    - 172.19.0.0/16
+
+ffmpeg:
+  hwaccel_args: preset-vaapi
+
+# AI object detection on the Intel Iris Xe iGPU
+detectors:
+  ov:
+    type: openvino
+    device: GPU
+
+model:
+  width: 300
+  height: 300
+  input_tensor: nhwc
+  input_pixel_format: bgr
+  path: /openvino-model/ssdlite_mobilenet_v2.xml
+  labelmap_path: /openvino-model/coco_91cl_bkgr.txt
+
+go2rtc:
+  streams:
+    # Main stream 2304x1296 h264 + pcm_mulaw audio; an extra AAC track is added for recordings.
+    pagar:
+      - rtsp://{FRIGATE_CAM_USER}:{FRIGATE_CAM_PASSWORD}@192.168.18.102:8554/Streaming/Channels/101
+      - ffmpeg:pagar#audio=aac
+    # Sub stream 640x360, used for detection.
+    pagar_sub:
+      - rtsp://{FRIGATE_CAM_USER}:{FRIGATE_CAM_PASSWORD}@192.168.18.102:8554/Streaming/Channels/102
+  webrtc:
+    candidates:
+      - 192.168.18.207:8555
+      - stun:8555
+
+objects:
+  track:
+    - person
+    - car
+    - motorcycle
+    - bicycle
+    - cat
+    - dog
+  filters:
+    person:
+      min_score: 0.5
+      threshold: 0.7
+
+record:
+  enabled: true
+  continuous:
+    days: 30
+  alerts:
+    pre_capture: 5
+    post_capture: 10
+    retain:
+      days: 90
+  detections:
+    retain:
+      days: 90
+
+snapshots:
+  enabled: true
+  bounding_box: true
+  retain:
+    default: 90
+
+cameras:
+  pagar:
+    friendly_name: Pagar
+    ffmpeg:
+      inputs:
+        - path: rtsp://127.0.0.1:8554/pagar
+          input_args: preset-rtsp-restream
+          roles:
+            - record
+        - path: rtsp://127.0.0.1:8554/pagar_sub
+          input_args: preset-rtsp-restream
+          roles:
+            - detect
+      output_args:
+        record: preset-record-generic-audio-aac
+    detect:
+      enabled: true
+      width: 640
+      height: 360
+      fps: 5
+    motion:
+      mask:
+        timestamp:
+          friendly_name: Jam kamera
+          coordinates: 0,0,0.36,0,0.36,0.08,0,0.08
+    zones:
+      depan_pagar:
+        friendly_name: Depan pagar
+        coordinates: 0.28,0.04,0.70,0.0,0.78,0.30,0.70,0.84,0.28,0.82
+        inertia: 3
+        objects:
+          - person
+          - bicycle
+          - motorcycle
+          - car
+      halaman:
+        friendly_name: Halaman
+        coordinates: 0.25,0.80,0.70,0.83,1.0,0.80,1.0,1.0,0.25,1.0
+        inertia: 3
+    review:
+      alerts:
+        labels:
+          - person
+        required_zones:
+          - depan_pagar
+          - halaman
+      detections:
+        labels:
+          - person
+          - car
+          - motorcycle
+          - bicycle
+          - cat
+          - dog
+    live:
+      streams:
+        Utama: pagar
+        Ringan: pagar_sub
+version: 0.18-0
+classification:
+  custom:
+    status_pagar:
+      name: status_pagar
+      threshold: 0.8
+      state_config:
+        motion: true
+        interval: 10
+        cameras:
+          pagar:
+            crop:
+              - 0.27
+              - 0.12
+              - 0.62
+              - 0.86

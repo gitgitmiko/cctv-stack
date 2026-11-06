@@ -1,0 +1,16 @@
+[Unit]
+Description=CCTV notifier (pagar dibuka -> WhatsApp group via Hermes)
+After=network-online.target hermes-gateway.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/gitgitmiko/cctv-stack/notifier
+EnvironmentFile=/home/gitgitmiko/cctv-stack/.env
+EnvironmentFile=/home/gitgitmiko/cctv-stack/notifier/notifier.env
+ExecStart=/home/gitgitmiko/cctv-stack/notifier/.venv/bin/python -u /home/gitgitmiko/cctv-stack/notifier/notifier.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

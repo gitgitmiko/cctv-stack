@@ -1,0 +1,34 @@
+# Daftar putih: repo ini PUBLIK. Semua diabaikan kecuali berkas yang disebut di bawah.
+# Rahasia (.env, *-admin.txt, mosquitto/passwd, .jwt_secret, homeassistant/.storage), database,
+# log, data broker, model terlatih, dan dataset gambar sengaja tidak pernah masuk repo.
+/*
+!/.gitignore
+!/README.md
+!/docker-compose.yml
+!/.env.example
+
+!/frigate/
+/frigate/*
+!/frigate/config/
+/frigate/config/*
+!/frigate/config/config.yml
+
+!/homeassistant/
+/homeassistant/*
+!/homeassistant/configuration.yaml
+!/homeassistant/automations.yaml
+!/homeassistant/scripts.yaml
+!/homeassistant/scenes.yaml
+
+!/mosquitto/
+/mosquitto/*
+!/mosquitto/config/
+/mosquitto/config/*
+!/mosquitto/config/mosquitto.conf
+
+!/notifier/
+/notifier/*
+!/notifier/notifier.py
+!/notifier/notifier.env.example
+!/notifier/requirements.txt
+!/notifier/cctv-notifier.service

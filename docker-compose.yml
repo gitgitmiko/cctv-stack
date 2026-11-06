@@ -1,0 +1,74 @@
+x-logging: &default-logging
+  # cap container logs on the system SSD (Docker default is unlimited)
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    logging: *default-logging
+    restart: unless-stopped
+    ports:
+      # only reachable from this server (Frigate via the compose network, Home Assistant via localhost)
+      - "127.0.0.1:1883:1883"
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+
+  frigate:
+    image: ghcr.io/blakeblackshear/frigate:stable
+    container_name: frigate
+    logging: *default-logging
+    restart: unless-stopped
+    stop_grace_period: 30s
+    shm_size: "256mb"
+    privileged: false
+    devices:
+      - /dev/dri/renderD128:/dev/dri/renderD128 # Intel Iris Xe: VAAPI decode + OpenVINO
+    group_add:
+      - "993" # render
+    env_file: .env
+    depends_on:
+      - mosquitto
+    ports:
+      - "8971:8971"            # UI with login (LAN + Cloudflare Tunnel)
+      - "127.0.0.1:5000:5000"  # internal API without login, localhost only (Home Assistant)
+      - "127.0.0.1:8554:8554"  # RTSP restream, localhost only
+      - "8555:8555/tcp"        # WebRTC live view
+      - "8555:8555/udp"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ./frigate/config:/config
+      # Recordings live on the external CCTV disk. create_host_path: false makes the
+      # container refuse to start when the disk is not mounted, instead of silently
+      # filling the system disk.
+      - type: bind
+        source: /mnt/cctv/frigate
+        target: /media/frigate
+        bind:
+          create_host_path: false
+      - type: tmpfs
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    logging: *default-logging
+    restart: unless-stopped
+    # host network so HA can discover smart-home devices on the LAN (port 8123)
+    network_mode: host
+    depends_on:
+      - mosquitto
+      - frigate
+    environment:
+      - TZ=Asia/Jakarta
+    volumes:
+      - ./homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
