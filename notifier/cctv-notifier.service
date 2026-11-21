@@ -5,10 +5,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/gitgitmiko/cctv-stack/notifier
-EnvironmentFile=/home/gitgitmiko/cctv-stack/.env
-EnvironmentFile=/home/gitgitmiko/cctv-stack/notifier/notifier.env
-ExecStart=/home/gitgitmiko/cctv-stack/notifier/.venv/bin/python -u /home/gitgitmiko/cctv-stack/notifier/notifier.py
+WorkingDirectory=/home/gitgitmiko/github-repos/cctv-stack/notifier
+EnvironmentFile=/home/gitgitmiko/github-repos/cctv-stack/.env
+EnvironmentFile=/home/gitgitmiko/github-repos/cctv-stack/notifier/notifier.env
+ExecStart=/home/gitgitmiko/github-repos/cctv-stack/notifier/.venv/bin/python -u /home/gitgitmiko/github-repos/cctv-stack/notifier/notifier.py
 Restart=always
 RestartSec=10
 
