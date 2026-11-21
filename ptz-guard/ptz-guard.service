@@ -1,0 +1,14 @@
+[Unit]
+Description=ptz-guard: kembalikan kamera pagar ke posisi semula kalau digeser
+After=network-online.target
+
+[Service]
+EnvironmentFile=/home/gitgitmiko/cctv-stack/.env
+EnvironmentFile=/home/gitgitmiko/cctv-stack/notifier/notifier.env
+WorkingDirectory=/home/gitgitmiko/cctv-stack/ptz-guard
+ExecStart=/home/gitgitmiko/cctv-stack/ptz-guard/.venv/bin/python -u guard.py
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=default.target

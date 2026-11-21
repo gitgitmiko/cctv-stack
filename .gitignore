@@ -32,3 +32,10 @@
 !/notifier/notifier.env.example
 !/notifier/requirements.txt
 !/notifier/cctv-notifier.service
+
+# ptz-guard: kode + unit saja. Foto acuan (refs/) sengaja tidak masuk karena repo publik.
+!/ptz-guard/
+/ptz-guard/*
+!/ptz-guard/guard.py
+!/ptz-guard/ptz-guard.service
+!/ptz-guard/requirements.txt
